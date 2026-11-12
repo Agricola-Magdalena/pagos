@@ -846,9 +846,9 @@ const FIREBASE_CONFIG = {
     if($('#q').value.trim()) L.push('Búsqueda: '+$('#q').value.trim());
     L.push('');
     function bloque(list, titulo, gest){
-      let tot=0, cnt=0;
-      list.forEach(c=>{ (c.items||[]).forEach(it=>{ cnt++; if(typeof it.monto==='number') tot+=it.monto; }); });
-      L.push((gest?'✅':'⏳')+' *'+titulo+' ('+cnt+(cnt===1?' pago':' pagos')+(tot?' – '+fm(tot):'')+')*');
+      let cnt=0;
+      list.forEach(c=>{ cnt+=(c.items||[]).length; });
+      L.push((gest?'✅':'⏳')+' *'+titulo+' ('+cnt+(cnt===1?' pago':' pagos')+')*');
       if(!list.length){ L.push('  Sin pagos.'); L.push(''); return; }
       L.push('');
       list.forEach(c=>{
