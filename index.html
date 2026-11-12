@@ -88,7 +88,7 @@ svg.i{width:15px;height:15px;flex:none;vertical-align:-2px}
 .banner .bbtn[aria-pressed="true"]{background:var(--brand);color:#fff}
 
 .wrap{max-width:1600px;margin:0 auto;padding:22px 22px 60px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:18px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
 .stat .k{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--muted)}
 .stat .v{font-size:30px;font-weight:800;margin-top:2px;line-height:1.15}
@@ -98,7 +98,7 @@ svg.i{width:15px;height:15px;flex:none;vertical-align:-2px}
 .stat.m .v{font-size:24px;padding-top:4px}
 :root[data-theme="dark"] .stat.p .v{color:var(--pend-ink)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .stat.p .v{color:var(--pend-ink)}}
-@media (max-width:900px){.stats{grid-template-columns:1fr 1fr}.stat .v{font-size:24px}}
+@media (max-width:900px){.stats{gap:8px}.stat{padding:10px 12px}.stat .k{font-size:11px}.stat .v{font-size:24px}}
 
 .filters{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
 .search{flex:1;min-width:220px;position:relative}
@@ -310,7 +310,6 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <div class="stat p"><div class="k"><svg class="i"><use href="#i-pending"/></svg>Pagos pendientes</div><div class="v num" id="sPend">0</div></div>
     <div class="stat g"><div class="k"><svg class="i"><use href="#i-okc"/></svg>Gestionados hoy</div><div class="v num" id="sGest">0</div></div>
     <div class="stat h"><div class="k"><svg class="i"><use href="#i-user"/></svg>Cargas de hoy</div><div class="v num" id="sHoy">0</div></div>
-    <div class="stat m"><div class="k"><svg class="i"><use href="#i-money"/></svg>Monto pendiente</div><div class="v num" id="sMonto">$ 0</div></div>
   </section>
 
   <section class="filters" aria-label="Filtros">
@@ -324,7 +323,7 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
     <p class="archnote" id="archNote" hidden></p>
     <div class="board">
       <div class="col">
-        <div class="col-h"><svg class="i" style="color:var(--pend)"><use href="#i-pending"/></svg><h2>Pendiente</h2><span class="sum num" id="sumP"></span><span class="count" id="cP">0</span></div>
+        <div class="col-h"><svg class="i" style="color:var(--pend)"><use href="#i-pending"/></svg><h2>Pendiente</h2><span class="count" id="cP">0</span></div>
         <div class="cards" id="colP"></div>
       </div>
       <div class="col">
@@ -357,7 +356,6 @@ dialog::backdrop{background:rgba(10,14,20,.55)}
           <select id="fWhoSel"></select>
         </div>
         <div class="f"><label for="fFecha">Fecha de gestión</label><input type="date" id="fFecha">
-          <div class="quick" id="quickDates"></div>
         </div>
       </div>
       <p class="sect">Pagos / facturas <small style="font-weight:500;color:var(--muted)">(podés agregar varios)</small></p>
@@ -594,21 +592,13 @@ const FIREBASE_CONFIG = {
   });
   $('#dTeam').addEventListener('close',()=>{ if($('#dForm').open) fillWhoSelect(lastAdded || $('#fWhoSel').value); });
 
-  function quickDates(){
-    const q=$('#quickDates'); q.textContent='';
-    const opts=[['Hoy',today()],['Martes '+fmtDM(nextDow(2)),nextDow(2)],['Jueves '+fmtDM(nextDow(4)),nextDow(4)]];
-    const seen=new Set();
-    opts.forEach(([l,v])=>{ if(seen.has(v)) return; seen.add(v); const b=document.createElement('button'); b.type='button'; b.textContent=l; b.onclick=()=>{$('#fFecha').value=v;}; q.appendChild(b); });
-  }
-
   function openForm(id, fecha){
     editingId=id||null;
     const c=id?cargas.find(x=>x.id===id):null;
     $('#formTitle').textContent=c?'Editar pago':'Nuevo pago';
     $('#btnSave').textContent=c?'Guardar cambios':'Guardar registro';
     fillWhoSelect(c?c.remitente:lastWho());
-    $('#fFecha').value = c?.fecha || fecha || dayFilter || nextPayDay();
-    quickDates();
+    $('#fFecha').value = c?.fecha || fecha || today();
     const box=$('#items'); box.textContent='';
     (c?.items?.length ? c.items : [null]).forEach(it=>box.appendChild(itemEl(it)));
     numberItems();
@@ -784,7 +774,6 @@ const FIREBASE_CONFIG = {
     $('#sPend').textContent=pend.length;
     $('#sGest').textContent=cargas.filter(c=>c.estado==='gestionado'&&isoTs(c.gestionadoEn)===t).length;
     $('#sHoy').textContent=cargas.filter(c=>isoTs(c.creadoEn)===t).length;
-    $('#sMonto').textContent=fm(pend.reduce((s,c)=>s+montoCarga(c),0));
 
     if(view==='board'){
       const searching=!!$('#q').value.trim();
@@ -793,7 +782,6 @@ const FIREBASE_CONFIG = {
       $('#archNote').hidden=!(searching||dayFilter);
       $('#archNote').textContent='Con búsqueda o filtro de fecha también se muestran los gestionados archivados.';
       $('#cP').textContent=P.length; $('#cG').textContent=G.length;
-      const sp=P.reduce((s,c)=>s+montoCarga(c),0); $('#sumP').textContent=sp?fm(sp):'';
       const cp=$('#colP'), cg=$('#colG'); cp.textContent=''; cg.textContent='';
       P.forEach(c=>cp.appendChild(card(c))); G.slice(0,150).forEach(c=>cg.appendChild(card(c)));
       const em=!loaded?'Cargando pagos…':null;
